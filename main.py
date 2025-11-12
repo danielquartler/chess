@@ -16,12 +16,7 @@ BLACK = (181, 136, 99)
 HIGHLIGHT = (186, 202, 68)
 SELECT = (246, 246, 130)
 
-# Piece values for notation
-PIECES = {
-    'wP': '♙', 'wR': '♖', 'wN': '♘', 'wB': '♗', 'wQ': '♕', 'wK': '♔',
-    'bP': '♟', 'bR': '♜', 'bN': '♞', 'bB': '♝', 'bQ': '♛', 'bK': '♚'
-}
-
+# Pieces images
 piece_black_bishop= pygame.image.load('images/black_bishop.png')
 piece_black_king= pygame.image.load('images/black_king.png')
 piece_black_knight= pygame.image.load('images/black_knight.png')
@@ -355,13 +350,7 @@ class ChessBoard:
             print(' ', end="")
             for c in range(DIMENSION):
                 piece = self.board[r][c]
-                if piece == '--':
-                    if c % 3 == 0:
-                        print("[-", end="]")
-                    else:
-                        print("[- ", end="]")
-                else:
-                    print("["+PIECES[piece], end="]")
+                print("["+piece, end="]")
             print('')
 
 class Move:
