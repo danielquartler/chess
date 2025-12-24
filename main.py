@@ -398,30 +398,30 @@ def draw_pieces(screen, board, font):
             piece = board[r][c]
             if piece[0]=='w':
                 if piece[1] == 'P':
-                    screen.blit(piece_white_pawn, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_pawn, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'R':
-                    screen.blit(piece_white_rock, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_rock, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'N':
-                    screen.blit(piece_white_knight, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_knight, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'B':
-                    screen.blit(piece_white_bishop, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_bishop, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'Q':
-                    screen.blit(piece_white_queen, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_queen, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'K':
-                    screen.blit(piece_white_king, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_white_king, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
             elif piece[0]=='b':
                 if piece[1] == 'P':
-                    screen.blit(piece_black_pawn, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_pawn, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'R':
-                    screen.blit(piece_black_rock, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_rock, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'N':
-                    screen.blit(piece_black_knight, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_knight, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'B':
-                    screen.blit(piece_black_bishop, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_bishop, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'Q':
-                    screen.blit(piece_black_queen, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_queen, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
                 elif piece[1] == 'K':
-                    screen.blit(piece_black_king, (c * SQ_SIZE + SQ_SIZE // 4, r * SQ_SIZE + SQ_SIZE // 4))
+                    screen.blit(piece_black_king, (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
 
 
 def highlight_squares(screen, game_state, valid_moves, selected_sq):
@@ -446,8 +446,9 @@ def draw_game_state(screen, game_state, valid_moves, selected_sq, font):
 
 def draw_text(screen, text, font):
     text_object = font.render(text, True, pygame.Color('Black'))
-    text_location = pygame.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 4 - text_object.get_width() / 4,
-                                                          HEIGHT / 4 - text_object.get_height() / 4)
+    Xloc = int(WIDTH * 0.22)
+    Yloc = HEIGHT / 2 - text_object.get_height() / 2
+    text_location = pygame.Rect(0, 0, int(WIDTH*0.56), int(HEIGHT*0.06)).move(Xloc, Yloc)
     screen.fill(pygame.Color('White'), text_location)
     screen.blit(text_object, text_location)
 
@@ -519,11 +520,11 @@ def main():
 
         if game_state.checkmate:
             game_over = True
-            text = 'Black wins by checkmate' if game_state.white_to_move else 'White wins by checkmate'
+            text = '   Black wins by checkmate' if game_state.white_to_move else '   White wins by checkmate'
             draw_text(screen, text, text_font)
         elif game_state.stalemate:
             game_over = True
-            draw_text(screen, 'Stalemate', text_font)
+            draw_text(screen, '                Stalemate', text_font)
 
         clock.tick(MAX_FPS)
         pygame.display.flip()
