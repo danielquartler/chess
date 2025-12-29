@@ -91,13 +91,12 @@ class ChessBoard:
 
             # Undo en passant
             if move.is_en_passant:
-                # Curr=2,5 deleted.  Prev=3,4.  3,5 restored to --
                 self.board[move.end_row][move.end_col] = '--'
                 curPiece = move.piece_moved  # such as 'wP'
                 curColor = curPiece[0]
                 oppColor = 'w' if curColor=='b' else 'b'
                 self.board[move.start_row][move.end_col] = oppColor + 'P'  # move.piece_captured
-                print(f'line 100: Undo en passant: {curPiece} loc={move.end_row},{move.end_col} deleted.  Prev={move.start_row},{move.start_col}.  {move.start_row},{move.end_col} restored')
+                print(f'line 99: Undo en passant: {curPiece} loc={move.end_row},{move.end_col} deleted.  Prev={move.start_row},{move.start_col}.  {move.start_row},{move.end_col} restored')
 
             # Undo castling
             if move.is_castle:
@@ -352,12 +351,70 @@ class ChessBoard:
                 print("[ " +piece, end="]")
             print('')
 
+    # Convert current board position to FEN notation
+    def get_fen(self):
+        fen = ""
+
+        # Board position
+        for r in range(8):
+            empty = 0
+            for c in range(8):
+                piece = self.board[r][c]
+                if piece == '--':
+                    empty += 1
+                else:
+                    if empty > 0:
+                        fen += str(empty)
+                        empty = 0
+                    piece_char = piece[1]
+                    if piece[0] == 'w':
+                        fen += piece_char
+                    else:
+                        fen += piece_char.lower()
+            if empty > 0:
+                fen += str(empty)
+            if r < 7:
+                fen += '/'
+
+        # Active color
+        fen += ' w ' if self.white_to_move else ' b '
+
+        # Castling rights
+        castling = ''
+        if self.castling_rights['wK']:
+            castling += 'K'
+        if self.castling_rights['wQ']:
+            castling += 'Q'
+        if self.castling_rights['bK']:
+            castling += 'k'
+        if self.castling_rights['bQ']:
+            castling += 'q'
+        fen += castling if castling else '-'
+        fen += ' '
+
+        # En passant
+        if self.en_passant_possible:
+            file = chr(ord('a') + self.en_passant_possible[1])
+            rank = str(8 - self.en_passant_possible[0])
+            fen += file + rank
+        else:
+            fen += '-'
+
+        # Halfmove clock and fullmove number
+        fen += ' 0 1'
+
+        return fen
+
 
 class Move:
     # slots:  Memory Optimization - Tells Python "this class will ONLY have these specific attributes"
     __slots__ = ['start_row', 'start_col', 'end_row', 'end_col',
                  'piece_moved', 'piece_captured', 'is_pawn_promotion',
                  'is_en_passant', 'is_castle', 'move_id', 'promotion_piece']
+    ranks_to_rows = {str(i): 8 - i for i in range(1, 9)}
+    rows_to_ranks = {v: k for k, v in ranks_to_rows.items()}
+    files_to_cols = {chr(97 + i): i for i in range(8)}
+    cols_to_files = {v: k for k, v in files_to_cols.items()}
 
     def __init__(self, start_sq, end_sq, board, is_en_passant=False, is_castle=False):
         self.start_row = start_sq[0]
@@ -381,3 +438,12 @@ class Move:
     #  Makes Objects Hashable: Enables fast dictionary lookups, when using "if move in valid_moves:" it would be O(1)
     def __hash__(self):
         return self.move_id
+
+    # Get move in UCI format
+    def get_uci_notation(self):
+        start = self.cols_to_files[self.start_col] + self.rows_to_ranks[self.start_row]
+        end = self.cols_to_files[self.end_col] + self.rows_to_ranks[self.end_row]
+        uci = start + end
+        if self.is_pawn_promotion and self.promotion_piece:
+            uci += self.promotion_piece.lower()
+        return uci

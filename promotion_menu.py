@@ -1,4 +1,5 @@
 # # promotion_menu.py
+# when a pawn reaches final row, it opens a promotion menu so user may select the required piece to create.
 import pygame
 
 MENU_BG = (245, 245, 245)
