@@ -164,7 +164,7 @@ class StockfishAI:
                         parts = line.split()
                         if len(parts) >= 2:
                             best_move = parts[1]
-                            print(f"✓ Best move: {best_move}")
+                            print(f" Best move: {best_move}")
                             break
                 except Exception as e:
                     print(f"StockfishAI Error reading bestmove: {e}")

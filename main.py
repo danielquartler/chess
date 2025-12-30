@@ -18,7 +18,8 @@ WHITE = (240, 217, 181)
 BLACK = (181, 136, 99)
 HIGHLIGHT = (186, 202, 68)
 SELECT = (246, 246, 130)
-CHECK_HIGHLIGHT = (235, 97, 80)  # Red color for check warning
+CHECK_HIGHLIGHT = (200, 70, 70)  # Red color for check warning
+MOVE_HIGHLIGHT = (210, 210, 40)
 
 # Pieces images
 IMAGES = {}
@@ -52,7 +53,7 @@ def draw_pieces(screen, board):
         for c in range(DIMENSION):
             piece = board[r][c]
             if piece != '--':
-                screen.blit(IMAGES[piece], (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
+                screen.blit(IMAGES[piece], (c * SQ_SIZE + SQ_SIZE // 6, r * SQ_SIZE + SQ_SIZE // 6))
 
 
 # Highlights the king's square in red when in check
@@ -66,6 +67,18 @@ def highlight_check(screen, game_state):
         s.set_alpha(150)  # Semi-transparent
         s.fill(CHECK_HIGHLIGHT)
         screen.blit(s, (king_col * SQ_SIZE, king_row * SQ_SIZE))
+
+
+# Highlights last move's squares
+def highlight_last_move(screen, ai_last_move_locs):
+    if ai_last_move_locs:
+        s = pygame.Surface((SQ_SIZE, SQ_SIZE))
+        s.set_alpha(150)  # Semi-transparent
+        s.fill(MOVE_HIGHLIGHT)
+        screen.blit(s, (ai_last_move_locs['start_col'] * SQ_SIZE, ai_last_move_locs['start_row'] * SQ_SIZE))
+        screen.blit(s, (ai_last_move_locs['end_col'] * SQ_SIZE, ai_last_move_locs['end_row'] * SQ_SIZE))
+
+
 # Highlight selected square and valid move destinations
 def highlight_squares(screen, game_state, valid_moves, selected_sq):
     if selected_sq != ():
@@ -82,8 +95,9 @@ def highlight_squares(screen, game_state, valid_moves, selected_sq):
 
 
 # Draw complete game state: board, highlights, and pieces
-def draw_game_state(screen, game_state, valid_moves, selected_sq):
+def draw_game_state(screen, game_state, valid_moves, selected_sq, ai_last_move_locs):
     draw_board(screen)
+    highlight_last_move(screen, ai_last_move_locs)
     highlight_check(screen, game_state)  # NEW: Highlight king if in check
     highlight_squares(screen, game_state, valid_moves, selected_sq)
     draw_pieces(screen, game_state.board)
@@ -167,9 +181,9 @@ def main():
     ai, game_mode = load_ai(game_mode, difficulty_level)
     ai_thinking = False
     ai_move = None
+    ai_last_move_locs = None
     ai_thread = None
     ai_lock = threading.Lock()  # IMPROVEMENT: Add thread safety
-
 
     running = True
     while running:
@@ -185,7 +199,7 @@ def main():
 
             # Inner function to get AI move in separate thread
             def get_ai_move():
-                nonlocal ai_move
+                nonlocal ai_move, ai_last_move_locs
                 try:  # IMPROVEMENT: Add error handling
                     fen = game_state.get_fen()
                     print(f"\nRequesting AI move for position: {fen[:50]}...")
@@ -195,19 +209,21 @@ def main():
                         with ai_lock:  # IMPROVEMENT: Thread-safe access
                             ai_move = uci_to_move(uci_move, game_state, valid_moves)
                         if ai_move:
-                            print(f" Move validated")
+                            print("AI move was validated")
+                            ai_last_move_locs = ai_move.get_move_locs()  # save move's data to highlight squares
                         else:
-                            print(f"ERROR: Could not convert UCI move to game move")
+                            print(f"Error: Could not convert UCI move to game move")
                     else:
-                        print("ERROR: AI returned None")
+                        print("Error: AI returned None")
                 except Exception as e:
-                    print(f"ERROR in AI thread: {e}")
+                    print(f"Error in AI thread: {e}")
                     with ai_lock:
                         ai_move = None
             ai_thread = threading.Thread(target=get_ai_move)
             ai_thread.daemon = True
             ai_thread.start()
 
+        # AI thinking process
         if ai_thinking and ai_thread and not ai_thread.is_alive():
             with ai_lock:
                 if ai_move and not awaiting_promotion:
@@ -220,7 +236,7 @@ def main():
                     game_state.print_board()
                 ai_thinking = False
 
-        # human move
+        # human's move
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
@@ -235,7 +251,9 @@ def main():
                         promotion_menu = None
                         pending_move = None
                         game_state.print_board()
-                elif not game_over and human_turn and not ai_thinking:
+                        ai_last_move_locs = None
+
+                elif not game_over and human_turn and not ai_thinking:  # human's move
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
 
@@ -246,11 +264,12 @@ def main():
                         selected_sq = (row, col)
                         player_clicks.append(selected_sq)
 
-                    if len(player_clicks) == 2:
+                    if len(player_clicks) == 2:  # user may commited a move
                         move = Move(player_clicks[0], player_clicks[1], game_state.board)
-                        if move.move_id in valid_moves_dict:
+                        if move.move_id in valid_moves_dict:  # user completed a valid move
+                            ai_last_move_locs = None
                             actual_move = valid_moves_dict[move.move_id]
-                            if actual_move.is_pawn_promotion:
+                            if actual_move.is_pawn_promotion:  # is promotion
                                 color = 'w' if game_state.white_to_move else 'b'
                                 promotion_menu = PromotionMenu(color, WIDTH)
                                 awaiting_promotion = True
@@ -265,19 +284,21 @@ def main():
                                 game_state.print_board()
                         else:
                             player_clicks = [selected_sq]
-            elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_z and not awaiting_promotion and human_turn:
+
+            elif e.type == pygame.KEYDOWN:  # if user pressed a key (supports undo/restart cases)
+                if e.key == pygame.K_z and not awaiting_promotion and human_turn:  # undo
                     game_state.undo_move()
                     if game_mode == 'ai' and ai:
                         game_state.undo_move()
                     move_made = True
                     game_over = False
+                    ai_last_move_locs = None
                     selected_sq = ()
                     player_clicks = []
                     with ai_lock:  # IMPROVEMENT: Thread-safe reset
                         ai_thinking = False
                         ai_move = None
-                if e.key == pygame.K_r:
+                if e.key == pygame.K_r:  # restart
                     game_state = ChessBoard()
                     valid_moves = game_state.get_valid_moves()
                     valid_moves_dict = {move.move_id: move for move in valid_moves}
@@ -285,10 +306,11 @@ def main():
                     player_clicks = []
                     move_made = False
                     game_over = False
+                    ai_last_move_locs = None
                     awaiting_promotion = False
                     promotion_menu = None
                     pending_move = None
-                    with ai_lock:  # IMPROVEMENT: Thread-safe reset
+                    with ai_lock:  # Thread-safe reset
                         ai_thinking = False
                         ai_move = None
 
@@ -297,7 +319,7 @@ def main():
             valid_moves_dict = {move.move_id: move for move in valid_moves}
             move_made = False
 
-        draw_game_state(screen, game_state, valid_moves, selected_sq)
+        draw_game_state(screen, game_state, valid_moves, selected_sq, ai_last_move_locs)
         if awaiting_promotion and promotion_menu:
             promotion_menu.draw(screen, IMAGES)
 
@@ -330,6 +352,7 @@ def main():
             thinking_text = font.render("AI is thinking...", True, pygame.Color('Red'))
             screen.blit(thinking_text, (10, 10))
 
+        # is game over?
         if game_state.checkmate:
             game_over = True
             winner = 'Black' if game_state.white_to_move else 'White'

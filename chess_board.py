@@ -447,3 +447,7 @@ class Move:
         if self.is_pawn_promotion and self.promotion_piece:
             uci += self.promotion_piece.lower()
         return uci
+
+    def get_move_locs(self):
+        return {"start_row": self.start_row, "start_col": self.start_col,
+                "end_row": self.end_row, "end_col": self.end_col}
