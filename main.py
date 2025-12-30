@@ -18,6 +18,7 @@ WHITE = (240, 217, 181)
 BLACK = (181, 136, 99)
 HIGHLIGHT = (186, 202, 68)
 SELECT = (246, 246, 130)
+CHECK_HIGHLIGHT = (235, 97, 80)  # Red color for check warning
 
 # Pieces images
 IMAGES = {}
@@ -54,6 +55,17 @@ def draw_pieces(screen, board):
                 screen.blit(IMAGES[piece], (c * SQ_SIZE + SQ_SIZE // 5, r * SQ_SIZE + SQ_SIZE // 6))
 
 
+# Highlights the king's square in red when in check
+def highlight_check(screen, game_state):
+    if game_state.in_check():
+        if game_state.white_to_move:
+            king_row, king_col = game_state.white_king_pos
+        else:
+            king_row, king_col = game_state.black_king_pos
+        s = pygame.Surface((SQ_SIZE, SQ_SIZE))
+        s.set_alpha(150)  # Semi-transparent
+        s.fill(CHECK_HIGHLIGHT)
+        screen.blit(s, (king_col * SQ_SIZE, king_row * SQ_SIZE))
 # Highlight selected square and valid move destinations
 def highlight_squares(screen, game_state, valid_moves, selected_sq):
     if selected_sq != ():
@@ -72,6 +84,7 @@ def highlight_squares(screen, game_state, valid_moves, selected_sq):
 # Draw complete game state: board, highlights, and pieces
 def draw_game_state(screen, game_state, valid_moves, selected_sq):
     draw_board(screen)
+    highlight_check(screen, game_state)  # NEW: Highlight king if in check
     highlight_squares(screen, game_state, valid_moves, selected_sq)
     draw_pieces(screen, game_state.board)
 
